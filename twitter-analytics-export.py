@@ -3,8 +3,8 @@ import re
 import time
 import json
 import datetime
-import urllib
-import cStringIO
+import urllib.parse
+from io import StringIO
 import codecs
 import csv
 import argparse
@@ -20,8 +20,8 @@ def twitter_flow(USERNAME, PASSWORD, ANALYTICS_ACCOUNT, NUM_DAYS, OUTPUT_DIRECTO
     split_data = format_data(data_string)
     outfile = get_filename(OUTPUT_DIRECTORY, start_time, end_time)
     
-    with open(outfile, 'w') as f:
-        writer = UnicodeWriter(f)
+    with open(outfile, 'w', encoding='utf-8') as f:
+        writer = csv.writer(f)
         for line in split_data:
             writer.writerow(line)
 
@@ -92,7 +92,7 @@ def get_tweet_data(session, analytics_account, start_time, end_time, user_agent)
         'end_time' : start_time,
         'lang' : 'en'
     }
-    querystring = '?' + urllib.urlencode(export_data)
+    querystring = '?' + urllib.parse.urlencode(export_data)
 
     status = 'Pending'
     counter = 0
@@ -131,39 +131,6 @@ def get_filename(output_dir, start_time, end_time):
 
     return full_path
 
-
-
-class UnicodeWriter: # grabbed from Python's csv module docs
-    """
-    A CSV writer which will write rows to CSV file "f",
-    which is encoded in the given encoding.
-    """
-
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-        # Redirect output to a queue
-        self.queue = cStringIO.StringIO()
-        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-        self.stream = f
-        self.encoder = codecs.getincrementalencoder(encoding)()
-
-    def writerow(self, row):
-        self.writer.writerow([s.encode("utf-8") for s in row])
-        # Fetch UTF-8 output from the queue ...
-        data = self.queue.getvalue()
-        data = data.decode("utf-8")
-        # ... and reencode it into the target encoding
-        data = self.encoder.encode(data)
-        # write to the target stream
-        self.stream.write(data)
-        # empty queue
-        self.queue.truncate(0)
-
-    def writerows(self, rows):
-        for row in rows:
-            self.writerow(row)
-
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', help="Twitter handle for login", required=True)
@@ -183,5 +150,3 @@ if __name__ == '__main__':
     OUTPUT_DIRECTORY = args.o
     
     twitter_flow(USERNAME, PASSWORD, ANALYTICS_ACCOUNT, NUM_DAYS, OUTPUT_DIRECTORY)
-
-
